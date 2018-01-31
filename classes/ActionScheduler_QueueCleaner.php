@@ -31,7 +31,11 @@ class ActionScheduler_QueueCleaner {
 			) );
 
 			foreach ( $actions_to_delete as $action_id ) {
-				$this->store->delete_action( $action_id );
+				try {
+					$this->store->delete_action( $action_id );
+				} catch ( Exception $e ) {
+					do_action( 'action_scheduler_failed_old_action_deletion', $action_id, $e, $lifespan, count( $actions_to_delete ) );
+				}
 			}
 		}
 	}
