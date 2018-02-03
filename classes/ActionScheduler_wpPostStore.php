@@ -122,9 +122,9 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 		$status = $this->get_action_status_by_post_status( $post->post_status );
 
-		if ( ActionScheduler_Store::STATUS_PENDING === $status ) {
+		if ( self::STATUS_PENDING === $status ) {
 			$action_class = 'ActionScheduler_StoredAction';
-		} elseif ( ActionScheduler_Store::STATUS_CANCELED === $status ) {
+		} elseif ( self::STATUS_CANCELED === $status ) {
 			$action_class = 'ActionScheduler_CanceledAction';
 		} else {
 			$action_class = 'ActionScheduler_FinishedAction';
@@ -142,10 +142,10 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 		switch ( $post_status ) {
 			case 'publish' :
-				$action_status = ActionScheduler_Store::STATUS_COMPLETE;
+				$action_status = self::STATUS_COMPLETE;
 				break;
 			case 'trash' :
-				$action_status = ActionScheduler_Store::STATUS_CANCELED;
+				$action_status = self::STATUS_CANCELED;
 				break;
 			default :
 				if ( ! array_key_exists( $post_status, $this->get_status_labels() ) ) {
@@ -166,10 +166,10 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	protected function get_post_status_by_action_status( $action_status ) {
 
 		switch ( $action_status ) {
-			case ActionScheduler_Store::STATUS_COMPLETE :
+			case self::STATUS_COMPLETE :
 				$post_status = 'publish';
 				break;
-			case ActionScheduler_Store::STATUS_CANCELED :
+			case self::STATUS_CANCELED :
 				$post_status = 'trash';
 				break;
 			default :
