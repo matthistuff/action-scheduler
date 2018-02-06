@@ -157,5 +157,12 @@ abstract class ActionScheduler_Store {
 		}
 		return self::$store;
 	}
+
+	protected function validate_sql_comparator( $comp ) {
+		if ( in_array($comp, array('!=', '>', '>=', '<', '<=', '=')) ) {
+			return $comp;
+		}
+		return '=';
+	}
 }
  
