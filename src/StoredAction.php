@@ -6,7 +6,7 @@
 namespace ActionScheduler;
 
 
-class StoredAction implements Storable, Claimable, ActionInterface {
+class StoredAction implements Storable, Claimable, ActionInterface, Scheduled {
 
 	/**
 	 * The base action.
@@ -108,7 +108,11 @@ class StoredAction implements Storable, Claimable, ActionInterface {
 	 * @return \ActionScheduler_Schedule
 	 */
 	public function get_schedule() {
-		return $this->action->get_schedule();
+		if ( $this->action instanceof Scheduled ) {
+			return $this->action->get_schedule();
+		} else {
+			return new \ActionScheduler_NullSchedule();
+		}
 	}
 
 	/**
