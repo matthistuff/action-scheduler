@@ -25,14 +25,6 @@ interface ActionInterface {
 	public function get_hook();
 
 	/**
-	 * Get the schedule for the Action.
-	 *
-	 * @author Jeremy Pry
-	 * @return \ActionScheduler_Schedule
-	 */
-	public function get_schedule();
-
-	/**
 	 * Get the arguments used for the Action.
 	 *
 	 * @author Jeremy Pry
