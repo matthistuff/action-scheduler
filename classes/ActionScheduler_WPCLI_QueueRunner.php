@@ -112,6 +112,8 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 			// Error if we lost the claim.
 			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $this->claim->get_id() ) ) ) {
 				$this->finish_progress_bar();
+				$this->store->release_claim($claim);
+				$this->monitor->detach();
 				WP_CLI::error( __( 'The claim has been lost. Aborting.', 'action-scheduler' ) );
 			}
 
