@@ -208,6 +208,19 @@ abstract class PP_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Get prepared OFFSET clause for items query
+	 *
+	 * @global wpdb $wpdb
+	 *
+	 * @return string Prepared OFFSET clause for items query.
+	 */
+	protected function get_items_query_offset() {
+		global $wpdb;
+
+		return $wpdb->prepare( 'OFFSET %d', $this->get_items_offset() );
+	}
+
+	/**
 	 * Returns the number of items to offset/skip for this current view.
 	 *
 	 * @return int
@@ -225,19 +238,6 @@ abstract class PP_List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Get prepared OFFSET clause for items query
-	 *
-	 * @global wpdb $wpdb
-	 *
-	 * @return string Prepared OFFSET clause for items query.
-	 */
-	protected function get_items_query_offset() {
-		global $wpdb;
-
-		return $wpdb->prepare( 'OFFSET %d', $this->get_items_offset() );
-	}
-
-	/**
 	 * Prepares the ORDER BY sql statement. It uses `$this->sort_by` to know which
 	 * columns are sortable. This requests validates the orderby $_GET parameter is a valid
 	 * column and sortable. It will also use order (ASC|DESC) using DESC by default.
@@ -247,20 +247,54 @@ abstract class PP_List_Table extends WP_List_Table {
 			return '';
 		}
 
-		$valid_orders = array_values( $this->sort_by );
-		if ( ! empty( $_GET['orderby'] ) && in_array( $_GET['orderby'], $valid_orders ) ) {
-			$by = wc_clean( $_GET['orderby'] );
+		$orderby = esc_sql( $this->get_request_orderby() );
+		$order   = esc_sql( $this->get_request_order() );
+
+		return "ORDER BY {$orderby} {$order}";
+	}
+
+	/**
+	 * Return the sortable column specified for this request to order the results by, if any.
+	 *
+	 * @return string
+	 */
+	protected function get_request_orderby() {
+
+		$valid_sortable_columns = array_values( $this->sort_by );
+
+		if ( ! empty( $_GET['orderby'] ) && in_array( $_GET['orderby'], $valid_sortable_columns ) ) {
+			$orderby = wc_clean( $_GET['orderby'] );
 		} else {
-			$by = $valid_orders[0];
+			$orderby = $valid_sortable_columns[0];
 		}
 
-		$by = esc_sql( $by );
-		if ( ! empty( $_GET['order'] ) && 'asc' === strtolower( $_GET['order'] ) ) {
-			$order = 'ASC';
-		} else {
+		return $orderby;
+	}
+
+	/**
+	 * Return the sortable column order specified for this request.
+	 *
+	 * @return string
+	 */
+	protected function get_request_order() {
+
+		if ( ! empty( $_GET['order'] ) && 'desc' === strtolower( $_GET['order'] ) ) {
 			$order = 'DESC';
+		} else {
+			$order = 'ASC';
 		}
-		return "ORDER BY {$by} {$order}";
+
+		return $order;
+	}
+
+	/**
+	 * Return the status filter for this request, if any.
+	 *
+	 * @return string
+	 */
+	protected function get_request_status() {
+		$status = ( ! empty( $_GET['status'] ) ) $_GET['status'] ? '';
+		return $status;
 	}
 
 	/**
