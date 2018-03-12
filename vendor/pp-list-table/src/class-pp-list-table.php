@@ -293,7 +293,7 @@ abstract class PP_List_Table extends WP_List_Table {
 	 * @return string
 	 */
 	protected function get_request_status() {
-		$status = ( ! empty( $_GET['status'] ) ) $_GET['status'] ? '';
+		$status = ( ! empty( $_GET['status'] ) ) ? $_GET['status'] : '';
 		return $status;
 	}
 
