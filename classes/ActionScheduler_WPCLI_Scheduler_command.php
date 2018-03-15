@@ -16,8 +16,13 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--batches=<size>]
 	 * : Limit execution to a number of batches. Defaults to 0, meaning batches will continue being executed until all actions are complete.
 	 *
+<<<<<<< HEAD
 	 * [--cleanup-batch-size=<size>]
 	 * : The maximum number of actions to clean up. Defaults to the value of --batch-size.
+=======
+	 * [--group=<group>]
+	 * : Only run actions from the specified group. Omitting this option runs actions from all groups.
+>>>>>>> Add group flag to WP CLI command
 	 *
 	 * [--force]
 	 * : Whether to force execution despite the maximum number of concurrent processes being exceeded.
@@ -31,6 +36,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$batch   = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
 		$batches = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
 		$clean   = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'cleanup-batch-size', $batch ) );
+		$group   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
 		$force   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
 
 		$batches_completed = 0;
