@@ -455,15 +455,18 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	}
 
 	/**
-	 * @param int $max_actions
+	 * @param int      $max_actions
 	 * @param DateTime $before_date Jobs must be schedule before this date. Defaults to now.
+	 * @param string   $group       Claim only actions in the given group.
 	 *
 	 * @return ActionScheduler_ActionClaim
+	 * @throws RuntimeException When there is an error staking a claim.
 	 */
-	public function stake_claim( $max_actions = 10, DateTime $before_date = NULL ){
+	public function stake_claim( $max_actions = 10, DateTime $before_date = null, $group = '' ) {
 		$claim_id = $this->generate_claim_id();
-		$this->claim_actions( $claim_id, $max_actions, $before_date );
+		$this->claim_actions( $claim_id, $max_actions, $before_date, $group );
 		$action_ids = $this->find_actions_by_claim_id( $claim_id );
+
 		return new ActionScheduler_ActionClaim( $claim_id, $action_ids );
 	}
 
@@ -485,25 +488,63 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	}
 
 	/**
-	 * @param string $claim_id
-	 * @param int $limit
+	 * @param string   $claim_id
+	 * @param int      $limit
 	 * @param DateTime $before_date Should use UTC timezone.
+	 * @param string   $group       Claim only actions in the given group.
+	 *
 	 * @return int The number of actions that were claimed
 	 * @throws RuntimeException
 	 */
-	protected function claim_actions( $claim_id, $limit, DateTime $before_date = NULL ) {
+	protected function claim_actions( $claim_id, $limit, DateTime $before_date = null, $group = '' ) {
 		/** @var wpdb $wpdb */
 		global $wpdb;
 
-		$date = is_null($before_date) ? as_get_datetime_object() : clone $before_date;
-		// can't use $wpdb->update() because of the <= condition, using post_modified to take advantage of indexes
-		$sql = "UPDATE {$wpdb->posts} SET post_password = %s, post_modified_gmt = %s, post_modified = %s WHERE post_type = %s AND post_status = %s AND post_password = '' AND post_date_gmt <= %s ORDER BY menu_order ASC, post_date_gmt ASC LIMIT %d";
-		$sql = $wpdb->prepare( $sql, array( $claim_id, current_time('mysql', true), current_time('mysql'), self::POST_TYPE, 'pending', $date->format('Y-m-d H:i:s'), $limit ) );
-		$rows_affected = $wpdb->query($sql);
-		if ( $rows_affected === false ) {
-			throw new RuntimeException(__('Unable to claim actions. Database error.', 'action-scheduler'));
+		$date = is_null( $before_date ) ? as_get_datetime_object() : clone $before_date;
+
+		// Check for a particular group.
+		if ( ! empty( $group ) && term_exists( $group, self::GROUP_TAXONOMY ) ) {
+			$query = new WP_Query();
+			$ids   = $query->query( array(
+				'fields'         => 'ids',
+				'post_type'      => self::POST_TYPE,
+				'has_password'   => false,
+				'date_query'     => array(),
+
+				// Pad the limit if $before_date is specified.
+				'posts_per_page' => null === $before_date ? $limit : $limit * 2,
+				'tax_query'      => array(
+					array(
+						'taxonomy'         => self::GROUP_TAXONOMY,
+						'field'            => 'slug',
+						'terms'            => $group,
+						'include_children' => false,
+						'post_status'      => ActionScheduler_Store::STATUS_PENDING,
+					),
+				),
+			) );
 		}
-		return (int)$rows_affected;
+
+		// can't use $wpdb->update() because of the <= condition, using post_modified to take advantage of indexes
+		$sql = "
+			UPDATE {$wpdb->posts} SET post_password = %s, post_modified_gmt = %s, post_modified = %s 
+			WHERE post_type = %s AND post_status = %s AND post_password = '' AND post_date_gmt <= %s
+			ORDER BY menu_order ASC, post_date_gmt ASC LIMIT %d";
+
+		$rows_affected = $wpdb->query( $wpdb->prepare( $sql, array(
+			$claim_id,
+			current_time( 'mysql', true ),
+			current_time( 'mysql' ),
+			self::POST_TYPE,
+			ActionScheduler_Store::STATUS_PENDING,
+			$date->format( 'Y-m-d H:i:s' ),
+			$limit,
+		) ) );
+		if ( $rows_affected === false ) {
+			throw new RuntimeException( __( 'Unable to claim actions. Database error.', 'action-scheduler' ) );
+		}
+
+		return (int) $rows_affected;
 	}
 
 	/**
